@@ -80,39 +80,6 @@ public class StartupChangeListener extends ListenerAdapter {
     private volatile boolean shuttingDown = false;
 
     public StartupChangeListener(MusicBot bot, String[] args) {
-        this.bot = bot;
-	
-	Config config = bot.getConfigs().config;
-	if (config.glanceWebhook != null && config.glanceWebhook.length() > 0) {
-	    int minShardId = Integer.parseInt(args[1]);
-	    int maxShardId = Integer.parseInt(args[2]);
-
-	    // reports all shards in cluster as offline on shutdown
-	    Runtime.getRuntime().addShutdownHook(new Thread() {
-		@Override
-		public void run() {
-		    // prevent other status updates from sending
-		    shuttingDown = true;
-
-		    for (int id = minShardId; id < maxShardId + 1; id++) {
-			GlanceMessage msg = new GlanceMessage(id, 5, config.botIdentity); // status 5 = SHUTDOWN
-
-			RequestBody body = RequestBody.create(JSON_MEDIA_TYPE, GSON.toJson(msg));
-
-			Request request = new Request.Builder()
-				.url(config.glanceWebhook)
-				.method("POST", body)
-				.build();
-
-			try {
-			    MusicBot.HTTP_CLIENT.newCall(request).execute().close();
-			} catch (IOException e) {
-			    LOGGER.error("Error posting to glance", e);
-			}
-		    }
-		}
-	    });
-	}
     }
 
     @Override
@@ -133,22 +100,6 @@ public class StartupChangeListener extends ListenerAdapter {
         LOGGER.info("Status changed from {} to {}", oldStatus.name(), status.name());
 
         Config config = bot.getConfigs().config;
-        if (!shuttingDown && config.glanceWebhook != null && config.glanceWebhook.length() > 0) {
-            GlanceMessage msg = new GlanceMessage(event, config.botIdentity);
-
-            RequestBody body = RequestBody.create(JSON_MEDIA_TYPE, GSON.toJson(msg));
-
-            Request request = new Request.Builder()
-                    .url(config.glanceWebhook)
-                    .method("POST", body)
-                    .build();
-
-            try {
-                MusicBot.HTTP_CLIENT.newCall(request).execute().close();
-            } catch (IOException e) {
-                LOGGER.error("Error posting to glance", e);
-            }
-        }
         if (config.statusWebhook != null && config.statusWebhook.length() > 0) {
             JDA jda = event.getJDA();
             if (jda.getSelfUser() == null) {
