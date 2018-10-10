@@ -80,6 +80,7 @@ public class StartupChangeListener extends ListenerAdapter {
     private volatile boolean shuttingDown = false;
 
     public StartupChangeListener(MusicBot bot, String[] args) {
+        this.bot = bot;
     }
 
     @Override
